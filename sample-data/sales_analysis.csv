@@ -1,0 +1,17 @@
+OrderId,ProductCategory,Quantity,UnitPrice,OrderDate,Region
+ORD001,Software,2,149.00,2026-01-05,North
+ORD002,Hardware,1,899.00,2026-01-08,West
+ORD003,Services,5,85.00,2026-01-12,South
+ORD004,Software,3,149.00,2026-01-16,East
+ORD005,Hardware,2,349.50,2026-01-19,North
+ORD006,Services,8,75.00,2026-01-25,West
+ORD007,Software,1,249.00,2026-02-02,South
+ORD008,Accessories,12,24.90,2026-02-06,East
+ORD009,Hardware,1,1299.00,2026-02-11,North
+ORD010,Services,4,120.00,2026-02-18,West
+ORD011,Software,6,99.00,2026-02-23,South
+ORD012,Accessories,20,12.50,2026-03-01,East
+ORD013,Hardware,2,499.00,2026-03-08,North
+ORD014,Software,4,179.00,2026-03-13,West
+ORD015,Services,3,150.00,2026-03-20,South
+ORD016,Accessories,15,19.90,2026-03-27,East

@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/backend/">
+    <Project Path="backend/AutoInsight.Api/AutoInsight.Api.csproj" />
+    <Project Path="backend/AutoInsight.Core/AutoInsight.Core.csproj" />
+    <Project Path="backend/AutoInsight.Infrastructure/AutoInsight.Infrastructure.csproj" />
+    <Project Path="backend/AutoInsight.Tests/AutoInsight.Tests.csproj" />
+  </Folder>
+</Solution>
