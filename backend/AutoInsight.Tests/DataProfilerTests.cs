@@ -66,8 +66,8 @@ public sealed class DataProfilerTests
         var dataset = DatasetWithRows(
             new() { ["Age"] = null, ["Group"] = "A" },
             new() { ["Age"] = "<NULL>", ["Group"] = "A" },
-            new() { ["Age"] = "a\\u001fb", ["Group"] = "c" },
-            new() { ["Age"] = "a", ["Group"] = "b\\u001fc" });
+            new() { ["Age"] = "a\u001fb", ["Group"] = "c" },
+            new() { ["Age"] = "a", ["Group"] = "b\u001fc" });
 
         Assert.Equal(0, _profiler.GetOverview(dataset).DuplicateRows);
     }
