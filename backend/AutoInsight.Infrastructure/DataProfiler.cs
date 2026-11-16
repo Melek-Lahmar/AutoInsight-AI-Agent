@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using AutoInsight.Core;
 
 namespace AutoInsight.Infrastructure;
@@ -129,11 +130,13 @@ public sealed class DataProfiler : IDataProfiler
     private static IReadOnlyList<CategoryFrequency> GetFrequencies(string[] values) => values
         .GroupBy(v => v, StringComparer.OrdinalIgnoreCase).OrderByDescending(g => g.Count()).Take(20)
         .Select(g => new CategoryFrequency(g.Key, g.Count(), Math.Round(g.Count() * 100d / values.Length, 2))).ToArray();
-    private static int CountDuplicates(Dataset dataset) => dataset.Rows.GroupBy(r => string.Join('\u001f', dataset.Headers.Select(h => r[h] ?? "<NULL>")), StringComparer.Ordinal).Sum(g => Math.Max(0, g.Count() - 1));
+    private static int CountDuplicates(Dataset dataset) => dataset.Rows
+        .GroupBy(r => JsonSerializer.Serialize(dataset.Headers.Select(h => r[h]).ToArray()), StringComparer.Ordinal)
+        .Sum(g => Math.Max(0, g.Count() - 1));
     private static string ResolveHeader(Dataset dataset, string requested) => dataset.Headers.FirstOrDefault(h => h.Equals(requested, StringComparison.OrdinalIgnoreCase)) ?? throw new DatasetValidationException($"Column '{requested}' was not found.");
     private static double[] GetNumbers(Dataset d, string h) => d.Rows.Select(r => r[h]).Where(v => IsNumber(v)).Select(v => ParseNumber(v!)).ToArray();
-    private static bool IsNumber(string? value) => double.TryParse(value, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out _);
-    private static double ParseNumber(string value) => double.Parse(value, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture);
+    private static bool IsNumber(string? value) => double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) && double.IsFinite(number);
+    private static double ParseNumber(string value) => double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
     private static double Percentile(double[] sorted, double percentile)
     {
         if (sorted.Length == 1) return sorted[0];
