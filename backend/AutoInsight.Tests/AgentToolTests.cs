@@ -1,7 +1,10 @@
 using System.Text.Json;
 using AutoInsight.Core;
 using AutoInsight.Infrastructure;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace AutoInsight.Tests;
 
@@ -94,15 +97,34 @@ public sealed class AgentToolTests
     [InlineData("openai")]
     public void Ai_options_accept_supported_providers(string provider)
     {
-        var options = new AiOptions { Provider = provider, Model = "test-model", ApiKey = "local-secret" };
+        var options = new AiOptions { Provider = provider, Model = "test-model", ApiKey = "test" };
         Assert.True(options.IsConfigured);
     }
 
     [Fact]
     public void Ai_options_reject_unknown_provider()
     {
-        var options = new AiOptions { Provider = "unknown", Model = "test-model", ApiKey = "local-secret" };
+        var options = new AiOptions { Provider = "unknown", Model = "test-model", ApiKey = "test" };
         Assert.False(options.IsConfigured);
+    }
+
+    [Fact]
+    public void Ai_configuration_clamps_timeout_and_tool_limits()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["AI_TIMEOUT_SECONDS"] = "1",
+            ["AI_MAX_TOOL_INVOCATIONS"] = "99"
+        }).Build();
+        using var services = new ServiceCollection()
+            .AddLogging()
+            .AddAutoInsightInfrastructure(configuration)
+            .BuildServiceProvider();
+
+        var options = services.GetRequiredService<IOptions<AiOptions>>().Value;
+
+        Assert.Equal(5, options.TimeoutSeconds);
+        Assert.Equal(16, options.MaxToolInvocations);
     }
 
     [Fact]

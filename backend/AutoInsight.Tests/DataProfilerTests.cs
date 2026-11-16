@@ -50,6 +50,21 @@ public sealed class DataProfilerTests
     }
 
     [Fact]
+    public void Scatter_chart_uses_numeric_x_values_instead_of_row_indexes()
+    {
+        var dataset = new Dataset(Guid.NewGuid(), "points.csv", DateTimeOffset.UtcNow, ["X", "Y"],
+            [
+                new Dictionary<string, string?> { ["X"] = "10", ["Y"] = "100" },
+                new Dictionary<string, string?> { ["X"] = "20", ["Y"] = "250" }
+            ], ',');
+
+        var chart = _profiler.GenerateChart(dataset, new("scatter", "X", "Y"));
+
+        Assert.Equal([10d, 20d], chart.Data.Select(point => point.SecondaryValue!.Value));
+        Assert.Equal([100d, 250d], chart.Data.Select(point => point.Value));
+    }
+
+    [Fact]
     public void Store_keeps_datasets_isolated()
     {
         var store = new InMemoryDatasetStore();
@@ -58,6 +73,39 @@ public sealed class DataProfilerTests
         store.Add(first); store.Add(second);
         Assert.Equal("1", store.Get(first.Id).Rows[0]["Age"]);
         Assert.Equal("2", store.Get(second.Id).Rows[0]["Age"]);
+    }
+
+    [Fact]
+    public void Store_evicts_the_oldest_dataset_after_the_retention_limit()
+    {
+        var store = new InMemoryDatasetStore();
+        var datasets = Enumerable.Range(0, InMemoryDatasetStore.MaxDatasets + 1)
+            .Select(index => new Dataset(Guid.NewGuid(), $"{index}.csv", DateTimeOffset.UtcNow.AddMinutes(index),
+                ["Value"], [new Dictionary<string, string?> { ["Value"] = index.ToString() }], ','))
+            .ToArray();
+
+        foreach (var dataset in datasets) store.Add(dataset);
+
+        Assert.Equal(InMemoryDatasetStore.MaxDatasets, store.List().Count);
+        Assert.False(store.TryGet(datasets[0].Id, out _));
+        Assert.True(store.TryGet(datasets[^1].Id, out _));
+    }
+
+    [Fact]
+    public void Markdown_report_escapes_dataset_controlled_markup_and_uses_invariant_numbers()
+    {
+        var dataset = new Dataset(Guid.NewGuid(), "<script>*report*.csv", DateTimeOffset.UtcNow, ["[Score]", "Group"],
+            [
+                new Dictionary<string, string?> { ["[Score]"] = "1", ["Group"] = "A" },
+                new Dictionary<string, string?> { ["[Score]"] = "2", ["Group"] = "B" }
+            ], ',');
+
+        var report = new MarkdownReportService(_profiler).GenerateMarkdown(dataset);
+
+        Assert.DoesNotContain("<script>", report);
+        Assert.Contains("&lt;script&gt;", report);
+        Assert.Contains("\\[Score\\]", report);
+        Assert.Contains("1.50", report);
     }
 
     [Fact]

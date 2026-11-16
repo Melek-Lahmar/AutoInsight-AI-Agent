@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text;
 using AutoInsight.Core;
 using AutoInsight.Infrastructure;
@@ -23,6 +24,24 @@ builder.Services.AddAutoInsightInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 app.UseMiddleware<ApiExceptionMiddleware>();
+if (app.Configuration.GetValue("LocalOnly", true))
+{
+    app.Use(async (context, next) =>
+    {
+        var remoteAddress = context.Connection.RemoteIpAddress;
+        var normalizedAddress = remoteAddress?.IsIPv4MappedToIPv6 == true ? remoteAddress.MapToIPv4() : remoteAddress;
+        if (normalizedAddress is not null && !IPAddress.IsLoopback(normalizedAddress))
+        {
+            await Results.Problem(
+                statusCode: StatusCodes.Status403Forbidden,
+                title: "Local access only",
+                detail: "AutoInsight accepts requests only from this computer in its default configuration.")
+                .ExecuteAsync(context);
+            return;
+        }
+        await next(context);
+    });
+}
 app.UseCors("frontend");
 app.UseSwagger();
 app.UseSwaggerUI();
@@ -62,12 +81,19 @@ app.MapGet("/api/datasets/{id:guid}/statistics", (Guid id, IDatasetStore store, 
     Results.Ok(profiler.GetColumnProfiles(store.Get(id)).Where(c => c.Statistics is not null).Select(c => new { c.Name, c.Statistics })));
 app.MapGet("/api/datasets/{id:guid}/quality", (Guid id, IDatasetStore store, IDataProfiler profiler) => Results.Ok(profiler.GetQualityFindings(store.Get(id))));
 app.MapPost("/api/datasets/{id:guid}/visualizations", (Guid id, VisualizationRequest request, IDatasetStore store, IDataProfiler profiler) =>
-    Results.Ok(profiler.GenerateChart(store.Get(id), request)));
+{
+    if (string.IsNullOrWhiteSpace(request.Type)) throw new DatasetValidationException("Choose a chart type.");
+    if (string.IsNullOrWhiteSpace(request.XColumn)) throw new DatasetValidationException("Choose an X-axis column.");
+    return Results.Ok(profiler.GenerateChart(store.Get(id), request));
+});
 
 app.MapPost("/api/agent/chat", async (AgentRequest request, IAgentService agent, CancellationToken cancellationToken) =>
 {
     if (string.IsNullOrWhiteSpace(request.Message)) throw new DatasetValidationException("Enter an analysis question.");
     if (request.Message.Length > 2_000) throw new DatasetValidationException("The analysis question must be 2,000 characters or fewer.");
+    if (!string.Equals(request.Mode, "demo", StringComparison.OrdinalIgnoreCase)
+        && !string.Equals(request.Mode, "ai", StringComparison.OrdinalIgnoreCase))
+        throw new DatasetValidationException("Agent mode must be either 'demo' or 'ai'.");
     return Results.Ok(await agent.ChatAsync(request, cancellationToken));
 });
 

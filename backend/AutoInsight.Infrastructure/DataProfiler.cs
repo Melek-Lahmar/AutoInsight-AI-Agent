@@ -98,13 +98,24 @@ public sealed class DataProfiler : IDataProfiler
             var points = counts.Select((count, i) => new DataPoint($"{min + i * width:F1}–{min + (i + 1) * width:F1}", count)).ToArray();
             return new("bar", $"Histogram of {x}", x, "Frequency", points);
         }
-        if (type is "scatter" or "line")
+        if (type == "scatter")
+        {
+            if (string.IsNullOrWhiteSpace(request.YColumn)) throw new DatasetValidationException("A Y column is required for this chart type.");
+            var y = ResolveHeader(dataset, request.YColumn);
+            var points = dataset.Rows.Select(r => new { X = r[x], Y = r[y] })
+                .Where(point => IsNumber(point.X) && IsNumber(point.Y))
+                .Take(500).Select(point => new DataPoint(point.X!, ParseNumber(point.Y!), ParseNumber(point.X!))).ToArray();
+            if (points.Length == 0) throw new DatasetValidationException("Scatter plots require numeric values in both the X and Y columns.");
+            return new(type, $"{y} by {x}", x, y, points, y);
+        }
+        if (type == "line")
         {
             if (string.IsNullOrWhiteSpace(request.YColumn)) throw new DatasetValidationException("A Y column is required for this chart type.");
             var y = ResolveHeader(dataset, request.YColumn);
             var points = dataset.Rows.Select(r => new { Label = r[x], Y = r[y] })
-                .Where(p => p.Label is not null && p.Y is not null && IsNumber(p.Y))
-                .Take(500).Select(p => new DataPoint(p.Label!, ParseNumber(p.Y!))).ToArray();
+                .Where(point => point.Label is not null && IsNumber(point.Y))
+                .Take(500).Select(point => new DataPoint(point.Label!, ParseNumber(point.Y!))).ToArray();
+            if (points.Length == 0) throw new DatasetValidationException($"Column '{y}' has no numeric values.");
             return new(type, $"{y} by {x}", x, y, points, y);
         }
         throw new DatasetValidationException("Supported chart types are bar, categorical, histogram, line, scatter, and missing.");

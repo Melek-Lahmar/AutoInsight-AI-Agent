@@ -17,9 +17,15 @@ public sealed class CsvDatasetParser : ICsvDatasetParser
             throw new DatasetValidationException("Only .csv files are accepted.");
 
         await using var buffer = new MemoryStream();
-        await stream.CopyToAsync(buffer, cancellationToken);
+        var chunk = new byte[81_920];
+        int bytesRead;
+        while ((bytesRead = await stream.ReadAsync(chunk, cancellationToken)) > 0)
+        {
+            if (buffer.Length + bytesRead > MaxFileBytes)
+                throw new DatasetValidationException("The CSV file exceeds the 5 MB upload limit.");
+            await buffer.WriteAsync(chunk.AsMemory(0, bytesRead), cancellationToken);
+        }
         if (buffer.Length == 0) throw new DatasetValidationException("The uploaded CSV file is empty.");
-        if (buffer.Length > MaxFileBytes) throw new DatasetValidationException("The CSV file exceeds the 5 MB upload limit.");
 
         buffer.Position = 0;
         string? firstLine;
@@ -64,7 +70,7 @@ public sealed class CsvDatasetParser : ICsvDatasetParser
         catch (DatasetValidationException) { throw; }
         catch (Exception ex) when (ex is CsvFormatException or CsvValidationException or DecoderFallbackException)
         {
-            throw new DatasetValidationException($"The CSV could not be parsed: {ex.Message}");
+            throw new DatasetValidationException("The CSV could not be parsed. Verify its delimiter, quoting, encoding, and row widths.");
         }
     }
 

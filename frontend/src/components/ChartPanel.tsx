@@ -14,7 +14,7 @@ export function ChartPanel({ chart }: { chart: ChartSpec }) {
             </LineChart>
           ) : chart.type === 'scatter' ? (
             <ScatterChart margin={{ top: 12, right: 16, left: 0, bottom: 18 }}>
-              <CartesianGrid strokeDasharray="4 4" stroke="#e4e8ef" /><XAxis dataKey="index" name={chart.xAxis} tick={{ fontSize: 11 }} /><YAxis dataKey="value" name={chart.yAxis} tick={{ fontSize: 11 }} /><Tooltip cursor={{ strokeDasharray: '3 3' }} /><Scatter data={data} fill="#635bff" />
+              <CartesianGrid strokeDasharray="4 4" stroke="#e4e8ef" /><XAxis type="number" dataKey="secondaryValue" name={chart.xAxis} tick={{ fontSize: 11 }} /><YAxis type="number" dataKey="value" name={chart.yAxis} tick={{ fontSize: 11 }} /><Tooltip cursor={{ strokeDasharray: '3 3' }} /><Scatter data={data} fill="#635bff" />
             </ScatterChart>
           ) : (
             <BarChart data={data} margin={{ top: 12, right: 16, left: 0, bottom: 28 }}>

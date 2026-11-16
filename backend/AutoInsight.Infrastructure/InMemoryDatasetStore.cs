@@ -5,11 +5,21 @@ namespace AutoInsight.Infrastructure;
 
 public sealed class InMemoryDatasetStore : IDatasetStore
 {
+    public const int MaxDatasets = 10;
     private readonly ConcurrentDictionary<Guid, Dataset> _datasets = new();
+    private readonly object _evictionGate = new();
 
     public Dataset Add(Dataset dataset)
     {
-        _datasets[dataset.Id] = dataset;
+        lock (_evictionGate)
+        {
+            _datasets[dataset.Id] = dataset;
+            while (_datasets.Count > MaxDatasets)
+            {
+                var oldest = _datasets.Values.MinBy(item => item.UploadedAt);
+                if (oldest is null || !_datasets.TryRemove(oldest.Id, out _)) break;
+            }
+        }
         return dataset;
     }
 
