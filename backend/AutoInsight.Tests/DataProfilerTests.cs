@@ -60,6 +60,26 @@ public sealed class DataProfilerTests
         Assert.Equal("2", store.Get(second.Id).Rows[0]["Age"]);
     }
 
+    [Fact]
+    public void Duplicate_detection_distinguishes_null_literals_and_embedded_separators()
+    {
+        var dataset = DatasetWithRows(
+            new() { ["Age"] = null, ["Group"] = "A" },
+            new() { ["Age"] = "<NULL>", ["Group"] = "A" },
+            new() { ["Age"] = "a\\u001fb", ["Group"] = "c" },
+            new() { ["Age"] = "a", ["Group"] = "b\\u001fc" });
+
+        Assert.Equal(0, _profiler.GetOverview(dataset).DuplicateRows);
+    }
+
+    [Fact]
+    public void Numeric_detection_rejects_ambiguous_and_non_finite_values()
+    {
+        Assert.NotEqual(DataKind.Numeric, DataProfiler.DetectKind(["1,2", "2,3"]));
+        Assert.NotEqual(DataKind.Numeric, DataProfiler.DetectKind(["NaN", "Infinity"]));
+        Assert.Equal(DataKind.Numeric, DataProfiler.DetectKind(["1.2", "2.3"]));
+    }
+
     private static Dataset DatasetWithRows(params Dictionary<string, string?>[] rows) =>
         new(Guid.NewGuid(), "test.csv", DateTimeOffset.UtcNow, ["Age", "Group"], rows, ',');
 }
