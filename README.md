@@ -275,6 +275,8 @@ Prompt injection in an uploaded cell cannot grant new capabilities: dataset valu
 - Only CSV uploads are supported; the default limit is 5 MB, 50,000 rows, and 100 columns.
 - Storage is ephemeral, single-node, and unauthenticated; this is a local portfolio application, not a multi-tenant service.
 - Type inference, IQR outliers, and imbalance detection are statistical heuristics, not domain truth.
+- Numeric parsing uses invariant-culture decimal points. Values such as `1,2` are not interpreted as `12`; normalize locale-specific decimal formats before profiling.
+- The API has no authentication and is intended for local, loopback-only use. Do not expose it to the internet or an untrusted network without adding authentication, access controls, and dataset lifecycle limits.
 - Quartiles use linear interpolation and standard deviation is calculated for the population.
 - Real AI Agent Mode needs a user-provided provider account, key, and available quota.
 - The Semantic Kernel Gemini connector used here is currently prerelease software.
