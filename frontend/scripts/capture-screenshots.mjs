@@ -44,6 +44,7 @@ try {
   await page.locator('label').filter({ hasText: 'X column' }).locator('select').selectOption('FinalGrade')
   await page.getByRole('button', { name: 'Generate chart' }).click()
   await page.getByText('Histogram of FinalGrade', { exact: true }).waitFor()
+  await page.waitForTimeout(800)
   await page.screenshot({ path: path.join(outputDirectory, 'visualizations.png'), fullPage: true })
 
   await page.getByRole('button', { name: 'AI assistant' }).click()
@@ -54,6 +55,16 @@ try {
   await page.getByRole('button', { name: 'Reports' }).click()
   await page.getByText('Markdown analysis report', { exact: true }).waitFor()
   await page.screenshot({ path: path.join(outputDirectory, 'reports.png'), fullPage: true })
+
+  const mobilePage = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 })
+  await mobilePage.goto(frontendUrl, { waitUntil: 'networkidle' })
+  await mobilePage.getByLabel('CSV file').setInputFiles(sampleDataset)
+  await mobilePage.getByText('students_performance.csv', { exact: true }).waitFor()
+  await mobilePage.getByRole('button', { name: 'Open navigation' }).click()
+  await mobilePage.getByRole('button', { name: 'Dashboard' }).click()
+  await mobilePage.getByText('Quality pulse', { exact: true }).waitFor()
+  await mobilePage.waitForTimeout(300)
+  await mobilePage.screenshot({ path: path.join(outputDirectory, 'mobile-dashboard.png'), fullPage: true })
 } finally {
   await browser.close()
 }

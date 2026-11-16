@@ -30,7 +30,16 @@ public sealed class CsvDatasetParserTests
     public async Task Rejects_malformed_row_width()
     {
         await using var stream = Csv("Name,Score\nAda,98,unexpected");
-        await Assert.ThrowsAsync<DatasetValidationException>(() => _parser.ParseAsync(stream, "bad.csv"));
+        var error = await Assert.ThrowsAsync<DatasetValidationException>(() => _parser.ParseAsync(stream, "bad.csv"));
+        Assert.DoesNotContain("unexpected", error.Message);
+    }
+
+    [Fact]
+    public async Task Rejects_oversized_stream_without_buffering_the_entire_input()
+    {
+        await using var stream = new MemoryStream(new byte[CsvDatasetParser.MaxFileBytes + 1]);
+        var error = await Assert.ThrowsAsync<DatasetValidationException>(() => _parser.ParseAsync(stream, "large.csv"));
+        Assert.Contains("5 MB", error.Message);
     }
 
     [Fact]

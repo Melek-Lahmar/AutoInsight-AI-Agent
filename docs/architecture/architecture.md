@@ -2,7 +2,7 @@
 
 ## Runtime boundaries
 
-The browser never parses the source CSV or holds an AI credential. It uploads a bounded file to the API, receives typed DTOs, and renders safe chart data. The API stores each parsed dataset under an opaque UUID in process memory.
+The browser never parses the source CSV or holds an AI credential. It uploads a bounded file to the API, receives typed DTOs, and renders safe chart data. The API stores each parsed dataset under an opaque UUID in process memory, retains at most ten datasets, and accepts loopback clients only by default.
 
 ```mermaid
 sequenceDiagram
@@ -67,6 +67,6 @@ These are calculated observations. Quality labels and recommendations are rule-b
 
 ## Security decisions
 
-The system does not expose file paths, shell commands, arbitrary code, SQL, or unrestricted HTTP tools to the model. CSV cell contents are never treated as prompts. The API logs tool names and timings, not rows or secrets. CORS is constrained to `FrontendOrigin`.
+The system does not expose file paths, shell commands, arbitrary code, SQL, or unrestricted HTTP tools to the model. CSV cell contents are never treated as prompts. The API logs tool names and timings, not rows or secrets. CORS is constrained to `FrontendOrigin`, host headers are restricted, and non-loopback clients receive a 403 response while `LocalOnly` is enabled.
 
 AI credentials are loaded server-side from environment variables or ASP.NET Core User Secrets. The browser can see whether a provider is configured but never receives the credential. External model providers form a separate privacy boundary: questions and minimized analytical aggregates leave the local process when AI Agent Mode is used.

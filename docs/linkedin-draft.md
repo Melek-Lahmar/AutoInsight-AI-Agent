@@ -13,7 +13,7 @@ The application can:
 - show exactly which analysis tools an assistant executes;
 - export a transparent Markdown report with limitations.
 
-One of the most important design decisions was to separate two modes. Demo Mode works without credentials and uses deterministic C# orchestration. AI Agent Mode uses real Semantic Kernel function calling with Gemini or OpenAI, but only through an allowlisted set of analysis tools. Raw dataset rows stay local by default, model inputs are minimized, and generated explanations must be grounded in calculated tool output.
+One of the most important design decisions was to separate two modes. Demo Mode works without credentials and uses deterministic C# orchestration. AI Agent Mode is implemented with Semantic Kernel function calling for Gemini or OpenAI, but only through an allowlisted set of analysis tools. Raw dataset rows stay local by default, model inputs are minimized, and generated explanations must be grounded in calculated tool output. I describe the external-model path as verified only after executing it with a valid provider credential.
 
 The most useful lesson was that “agentic” behavior is not the chat interface. The engineering value comes from bounded tools, observable execution, factual grounding, failure handling, privacy controls, and tests.
 

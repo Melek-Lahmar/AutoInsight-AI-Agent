@@ -15,6 +15,8 @@ public static class DependencyInjection
             options.ApiKey = configuration["AI_API_KEY"] ?? configuration["AI:ApiKey"] ?? "";
             if (int.TryParse(configuration["AI_TIMEOUT_SECONDS"], out var timeout)) options.TimeoutSeconds = timeout;
             if (int.TryParse(configuration["AI_MAX_TOOL_INVOCATIONS"], out var max)) options.MaxToolInvocations = max;
+            options.TimeoutSeconds = Math.Clamp(options.TimeoutSeconds, 5, 120);
+            options.MaxToolInvocations = Math.Clamp(options.MaxToolInvocations, 1, 16);
         });
         services.AddSingleton<IDatasetStore, InMemoryDatasetStore>();
         services.AddSingleton<ICsvDatasetParser, CsvDatasetParser>();

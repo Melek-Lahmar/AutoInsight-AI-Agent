@@ -66,6 +66,17 @@ public sealed class ApiWorkflowTests : IClassFixture<WebApplicationFactory<Progr
     }
 
     [Fact]
+    public async Task Untrusted_host_header_is_rejected()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/health");
+        request.Headers.Host = "example.com";
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Ai_mode_without_credentials_returns_a_safe_configuration_error()
     {
         using var form = new MultipartFormDataContent();
@@ -76,5 +87,19 @@ public sealed class ApiWorkflowTests : IClassFixture<WebApplicationFactory<Progr
         var body = await response.Content.ReadAsStringAsync();
         Assert.Contains("not configured", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("API_KEY", body, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Invalid_agent_mode_and_chart_payload_return_validation_errors()
+    {
+        using var form = new MultipartFormDataContent();
+        form.Add(new ByteArrayContent(Encoding.UTF8.GetBytes("Value\n1")), "file", "tiny.csv");
+        var upload = await (await _client.PostAsync("/api/datasets/upload", form)).Content.ReadFromJsonAsync<UploadResult>(Json);
+
+        var agent = await _client.PostAsJsonAsync("/api/agent/chat", new AgentRequest(upload!.Overview.Id, "Analyze this dataset", "unsupported"));
+        var chart = await _client.PostAsJsonAsync($"/api/datasets/{upload.Overview.Id}/visualizations", new { type = (string?)null, xColumn = "Value" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, agent.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, chart.StatusCode);
     }
 }
