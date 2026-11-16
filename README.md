@@ -33,6 +33,7 @@ Raw rows are not placed in the model prompt. Only the user's question and minimi
 ### Data exploration
 
 - bounded CSV upload and validation;
+- bounded in-memory retention of the ten most recently uploaded datasets;
 - automatic delimiter detection for comma, semicolon, tab, and pipe files;
 - dataset preview, dimensions, schema inference, and column identification;
 - numeric, categorical, date, and text type inference.
@@ -122,6 +123,8 @@ All images below were captured from the running application with the bundled syn
 
 ![Generated analytical report](docs/screenshots/reports.png)
 
+<p align="center"><img src="docs/screenshots/mobile-dashboard.png" alt="Responsive AutoInsight dashboard on a mobile viewport" width="390"></p>
+
 ## Installation and quick start
 
 ### Prerequisites
@@ -175,7 +178,7 @@ Demo Mode requires no credential. It maps supported request patterns to the same
 
 ### Real AI Agent Mode
 
-Gemini is the recommended development option because compatible Gemini models support function calling and Google offers a limited free tier. The application also supports OpenAI. Provider quotas, model availability, pricing, and data-use terms can change; check the provider's current documentation before use.
+Gemini is the recommended development option because compatible Gemini models support function calling and Google offers a limited free tier. As verified on 16 November 2026, `gemini-3.8-flash` is a stable model identifier with function-calling support. The application also supports OpenAI. The Semantic Kernel Google connector remains prerelease software. Provider quotas, model availability, pricing, and data-use terms can change; check the [official Gemini model documentation](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash) and [Semantic Kernel function-calling documentation](https://learn.microsoft.com/semantic-kernel/concepts/ai-services/chat-completion/function-calling/) before use.
 
 Store credentials in ASP.NET Core User Secrets, never in the repository:
 
@@ -229,8 +232,8 @@ The published CI performs the same credential-free checks. It intentionally make
 
 | Test scenario | Expected behavior | Observed result | Status |
 |---|---|---|---|
-| Backend build and tests | Solution restores, builds, and deterministic tests pass | Release build: 0 warnings/0 errors; 22 of 22 tests passed | Pass |
-| Frontend lint, tests, and build | Static checks, component tests, and production bundle pass | oxlint passed; 3 of 3 tests passed; Vite production build completed | Pass |
+| Backend build and tests | Solution restores, builds, and deterministic tests pass | Release build: 0 warnings/0 errors; 31 of 31 tests passed | Pass |
+| Frontend lint, tests, and build | Static checks, component tests, and production bundle pass | oxlint passed; 4 of 4 tests passed; Vite production build completed | Pass |
 | Complete Demo Mode workflow | Upload, profile, chat, chart, and report endpoints return grounded results | Verified locally with the synthetic student dataset | Pass |
 | Invalid or missing AI credential | API rejects AI mode safely without revealing a credential | Verified by API integration test | Pass |
 | Five genuine model-backed prompts | Semantic Kernel invokes real tools through an external model | Requires a locally supplied provider credential | Not yet verified |
@@ -260,7 +263,8 @@ AutoInsight-AI-Agent/
 
 - CSV files are untrusted data, never executable instructions.
 - Extension, byte-size, row-count, and column-count limits reduce resource abuse.
-- Parsed datasets live under opaque IDs in memory and disappear when the API stops.
+- Parsed datasets live under opaque IDs in memory, are limited to the ten most recent uploads, and disappear when the API stops.
+- The default server configuration rejects non-loopback clients and restricts accepted host headers.
 - Raw rows and secrets are not logged or placed in the LLM prompt.
 - Tool outputs are minimized: previews, raw categorical identifiers, and chart points remain local.
 - Agent functions are explicitly allowlisted and protected by invocation and request-time limits.
@@ -273,10 +277,10 @@ Prompt injection in an uploaded cell cannot grant new capabilities: dataset valu
 ## Limitations
 
 - Only CSV uploads are supported; the default limit is 5 MB, 50,000 rows, and 100 columns.
-- Storage is ephemeral, single-node, and unauthenticated; this is a local portfolio application, not a multi-tenant service.
+- Storage is ephemeral, single-node, and unauthenticated; the oldest dataset is evicted after ten uploads.
 - Type inference, IQR outliers, and imbalance detection are statistical heuristics, not domain truth.
 - Numeric parsing uses invariant-culture decimal points. Values such as `1,2` are not interpreted as `12`; normalize locale-specific decimal formats before profiling.
-- The API has no authentication and is intended for local, loopback-only use. Do not expose it to the internet or an untrusted network without adding authentication, access controls, and dataset lifecycle limits.
+- The API has no authentication and enforces loopback-only access by default. Do not disable `LocalOnly` or expose it to an untrusted network without adding authentication and authorization.
 - Quartiles use linear interpolation and standard deviation is calculated for the population.
 - Real AI Agent Mode needs a user-provided provider account, key, and available quota.
 - The Semantic Kernel Gemini connector used here is currently prerelease software.
