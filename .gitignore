@@ -23,6 +23,7 @@ appsettings.Development.json
 Thumbs.db
 
 # Runtime artifacts
+.autoinsight/
 logs/
 *.log
 TestResults/

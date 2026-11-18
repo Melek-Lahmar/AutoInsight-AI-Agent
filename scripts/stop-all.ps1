@@ -1,11 +1,12 @@
 $ErrorActionPreference = 'Stop'
-$listeners = Get-NetTCPConnection -State Listen -LocalPort 5000,5173 -ErrorAction SilentlyContinue
-$processIds = $listeners | Select-Object -ExpandProperty OwningProcess -Unique
-if (-not $processIds) {
-    Write-Host 'AutoInsight is not listening on ports 5000 or 5173.'
+$processHelpers = Join-Path $PSScriptRoot 'process-management.ps1'
+. $processHelpers
+
+$state = Get-AutoInsightState
+if (-not $state) {
+    Write-Host 'No start-all managed AutoInsight instance was found. No process was terminated.'
     return
 }
-foreach ($processId in $processIds) {
-    Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
-    Write-Host "Stopped process $processId."
-}
+
+Stop-AutoInsightTrackedState -State $state
+Remove-AutoInsightState

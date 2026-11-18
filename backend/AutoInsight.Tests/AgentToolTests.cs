@@ -137,4 +137,16 @@ public sealed class AgentToolTests
         plugin.GetDatasetOverview(dataset.Id.ToString());
         Assert.Throws<InvalidOperationException>(() => plugin.GetDatasetOverview(dataset.Id.ToString()));
     }
+
+    [Fact]
+    public void Failed_tool_call_is_not_recorded_as_a_successful_execution()
+    {
+        var plugin = new DatasetAnalysisPlugin(
+            new InMemoryDatasetStore(),
+            new DataProfiler(),
+            NullLogger<DatasetAnalysisPlugin>.Instance);
+
+        Assert.Throws<DatasetValidationException>(() => plugin.GetDatasetOverview("not-a-dataset-id"));
+        Assert.Empty(plugin.Executions);
+    }
 }

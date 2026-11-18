@@ -90,6 +90,19 @@ public sealed class ApiWorkflowTests : IClassFixture<WebApplicationFactory<Progr
     }
 
     [Fact]
+    public async Task Public_configuration_exposes_operational_limits_but_not_credentials()
+    {
+        var response = await _client.GetAsync("/api/config");
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains("timeoutSeconds", body);
+        Assert.Contains("maxToolInvocations", body);
+        Assert.DoesNotContain("apiKey", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("AI_API_KEY", body, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task Invalid_agent_mode_and_chart_payload_return_validation_errors()
     {
         using var form = new MultipartFormDataContent();

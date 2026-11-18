@@ -67,5 +67,7 @@ export interface AppConfig {
   aiModeConfigured: boolean
   provider?: string
   model?: string
+  timeoutSeconds?: number
+  maxToolInvocations?: number
   privacy: string
 }

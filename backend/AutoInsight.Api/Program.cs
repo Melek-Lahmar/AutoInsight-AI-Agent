@@ -60,6 +60,8 @@ app.MapGet("/api/config", (IOptions<AiOptions> options) => Results.Ok(new
     aiModeConfigured = options.Value.IsConfigured,
     provider = options.Value.IsConfigured ? options.Value.Provider : null,
     model = options.Value.IsConfigured ? options.Value.Model : null,
+    timeoutSeconds = options.Value.TimeoutSeconds,
+    maxToolInvocations = options.Value.MaxToolInvocations,
     privacy = "Raw dataset rows remain local. AI mode receives the user question and tool-returned summaries only."
 }));
 
