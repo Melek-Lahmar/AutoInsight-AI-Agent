@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Activity, AlertTriangle, BarChart3, Bot, CheckCircle2, ChevronRight, Database, Download, FileSearch, LayoutDashboard, LoaderCircle, LockKeyhole, Menu, MessageSquareText, Moon, Rows3, Send, ShieldCheck, Sparkles, Sun, Table2, WandSparkles, X } from 'lucide-react'
 import { api } from './api'
-import { ChartPanel } from './components/ChartPanel'
 import { UploadZone } from './components/UploadZone'
 import type { AgentResponse, AppConfig, ChartSpec, ColumnProfile, DatasetOverview, QualityFinding } from './types'
 
 type View = 'dashboard' | 'dataset' | 'visuals' | 'agent' | 'reports'
+const DeferredChartPanel = lazy(() => import('./components/ChartPanel').then(module => ({ default: module.ChartPanel })))
 const nav: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'dataset', label: 'Dataset explorer', icon: Table2 },
@@ -15,6 +15,9 @@ const nav: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
 ]
 
 function formatNumber(value: number) { return new Intl.NumberFormat('en').format(value) }
+function ChartPanel({ chart }: { chart: ChartSpec }) {
+  return <Suspense fallback={<div className="chart-placeholder" role="status">Loading chart…</div>}><DeferredChartPanel chart={chart} /></Suspense>
+}
 
 function App() {
   const [view, setView] = useState<View>('dashboard')

@@ -24,7 +24,7 @@ The design keeps responsibilities explicit:
 - **deterministic analytics** calculate profiles, statistics, quality findings, outliers, and chart data;
 - **AI-assisted interpretation** explains calculated results in plain language;
 - **autonomous tool selection** lets the model choose the necessary functions for a request;
-- **observable execution** returns tool names, durations, success states, and an optional local chart specification.
+- **observable execution** returns successful tool names, durations, completion summaries, and an optional local chart specification.
 
 Raw rows are not placed in the model prompt. Only the user's question and minimized analytical outputs are sent to the configured provider.
 
@@ -159,7 +159,7 @@ Run the backend and frontend in separate terminals:
 ./scripts/start-frontend.ps1
 ```
 
-Alternatively, `./scripts/start-all.ps1` launches both local processes. Stop them with `./scripts/stop-all.ps1`.
+Alternatively, `./scripts/start-all.ps1` launches both services and records their process identities under the ignored `.autoinsight/` runtime directory. `./scripts/stop-all.ps1` stops only that recorded process tree; it never terminates a process merely because it occupies port 5000 or 5173. The separate-terminal launchers stay in the foreground and are stopped with `Ctrl+C`.
 
 | Service | Development URL |
 |---|---|
@@ -178,9 +178,11 @@ Demo Mode requires no credential. It maps supported request patterns to the same
 
 ### Real AI Agent Mode
 
-Gemini is the recommended development option because compatible Gemini models support function calling and Google offers a limited free tier. As verified on 16 November 2026, `gemini-3.8-flash` is a stable model identifier with function-calling support. The application also supports OpenAI. The Semantic Kernel Google connector remains prerelease software. Provider quotas, model availability, pricing, and data-use terms can change; check the [official Gemini model documentation](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash) and [Semantic Kernel function-calling documentation](https://learn.microsoft.com/semantic-kernel/concepts/ai-services/chat-completion/function-calling/) before use.
+Gemini is the recommended development option because compatible Gemini models support function calling and Google offers a limited free tier. As verified on 18 November 2026, `gemini-3.8-flash` is a stable model identifier with function-calling support. The application also supports OpenAI. The Semantic Kernel Google connector remains prerelease software. Provider quotas, model availability, pricing, and data-use terms can change; check the [official Gemini model documentation](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash) and [Semantic Kernel function-calling documentation](https://learn.microsoft.com/semantic-kernel/concepts/ai-services/chat-completion/function-calling/) before use.
 
-Store credentials in ASP.NET Core User Secrets, never in the repository:
+Create a key from the [Google AI Studio API Keys page](https://aistudio.google.com/app/apikey). Before use, open the project's [AI Studio rate-limit view](https://aistudio.google.com/rate-limit) and confirm that `gemini-3.8-flash` is available to that project under its current free-tier quota. The [official pricing page](https://ai.google.dev/gemini-api/docs/pricing) currently lists a free tier for the model, but availability and limits are account- and project-specific. This project does not require or enable billing.
+
+Store the key in ASP.NET Core User Secrets, never in the repository or this README:
 
 ```powershell
 dotnet user-secrets set "AI_PROVIDER" "gemini" --project backend/AutoInsight.Api
@@ -188,7 +190,7 @@ dotnet user-secrets set "AI_MODEL" "gemini-3.8-flash" --project backend/AutoInsi
 dotnet user-secrets set "AI_API_KEY" "PASTE_THE_KEY_LOCALLY" --project backend/AutoInsight.Api
 ```
 
-For OpenAI, set `AI_PROVIDER` to `openai` and select a currently supported function-calling model. Environment variables with the same names are also supported for ephemeral local sessions and CI environments. The frontend receives only the provider name, model name, and whether AI is configured; it never receives the API key.
+For OpenAI, set `AI_PROVIDER` to `openai` and select a currently supported function-calling model. Environment variables with the same names are also supported for ephemeral local sessions and CI environments. The frontend receives only the provider name, model name, configuration status, and operational timeout/tool limits; it never receives the API key.
 
 Privacy note: the source CSV stays in local process memory, but the question and minimized analytical aggregates are transmitted to the selected external model. On some free tiers, provider terms may permit submitted data to be used for product improvement. Do not use sensitive, confidential, or regulated data without reviewing the applicable terms and organizational policy.
 
@@ -214,6 +216,8 @@ Run the complete local suite:
 ./scripts/run-tests.ps1
 ```
 
+On Windows, the ownership-safe local start/stop workflow can be checked separately with `./scripts/test-process-management.ps1`. The check first proves that an unrelated listener is preserved, then starts, probes, and stops a tracked AutoInsight instance.
+
 Or run each layer independently:
 
 ```powershell
@@ -232,9 +236,10 @@ The published CI performs the same credential-free checks. It intentionally make
 
 | Test scenario | Expected behavior | Observed result | Status |
 |---|---|---|---|
-| Backend build and tests | Solution restores, builds, and deterministic tests pass | Release build: 0 warnings/0 errors; 31 of 31 tests passed | Pass |
-| Frontend lint, tests, and build | Static checks, component tests, and production bundle pass | oxlint passed; 4 of 4 tests passed; Vite production build completed | Pass |
+| Backend build and tests | Solution restores, builds, and deterministic tests pass | Release build: 0 warnings/0 errors; 33 of 33 tests passed | Pass |
+| Frontend lint, tests, and build | Static checks, component tests, and production bundle pass | oxlint passed; 4 of 4 tests passed; initial JS reduced from 654.89 kB to 253.45 kB through lazy chart loading | Pass |
 | Complete Demo Mode workflow | Upload, profile, chat, chart, and report endpoints return grounded results | Verified locally with the synthetic student dataset | Pass |
+| Managed local startup and shutdown | Occupied ports are preserved and only recorded AutoInsight process trees are stopped | Dedicated Windows process-management validation passed | Pass |
 | Invalid or missing AI credential | API rejects AI mode safely without revealing a credential | Verified by API integration test | Pass |
 | Five genuine model-backed prompts | Semantic Kernel invokes real tools through an external model | Requires a locally supplied provider credential | Not yet verified |
 
@@ -285,7 +290,7 @@ Prompt injection in an uploaded cell cannot grant new capabilities: dataset valu
 - Real AI Agent Mode needs a user-provided provider account, key, and available quota.
 - The Semantic Kernel Gemini connector used here is currently prerelease software.
 - Model responses can still be incomplete or misleading and must be checked against the visible tool trace.
-- The initial frontend bundle is not route-level code split.
+- The charting library is lazy-loaded to keep the initial bundle smaller; the remaining interface is a single-page application rather than a routed multi-page client.
 
 ## Future roadmap
 
