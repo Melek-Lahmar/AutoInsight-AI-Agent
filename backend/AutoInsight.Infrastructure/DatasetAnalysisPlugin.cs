@@ -111,12 +111,19 @@ public sealed class DatasetAnalysisPlugin(
     {
         if (Interlocked.Increment(ref _invocations) > maxInvocations) throw new InvalidOperationException($"The maximum of {maxInvocations} tool calls was reached.");
         var stopwatch = Stopwatch.StartNew();
-        try { return action(); }
-        finally
+        try
         {
+            var result = action();
             stopwatch.Stop();
             _executions.Add(new(name, summary, (int)stopwatch.ElapsedMilliseconds));
             logger.LogInformation("Agent tool {ToolName} completed in {ElapsedMs} ms", name, stopwatch.ElapsedMilliseconds);
+            return result;
+        }
+        catch
+        {
+            stopwatch.Stop();
+            logger.LogWarning("Agent tool {ToolName} failed after {ElapsedMs} ms", name, stopwatch.ElapsedMilliseconds);
+            throw;
         }
     }
 }

@@ -52,7 +52,7 @@ sequenceDiagram
 - `get_data_quality`
 - `generate_chart_specification`
 
-Each function resolves a dataset UUID against the in-memory store, delegates to deterministic services, serializes a minimized result, and appends a user-visible trace entry. Dataset previews, raw chart points, and high-cardinality categorical identifiers remain local. The plugin rejects calls after the configured maximum. The request also has a cancellation timeout.
+Each function resolves a dataset UUID against the in-memory store, delegates to deterministic services, serializes a minimized result, and appends a user-visible trace entry only after successful completion. Failed calls are logged without being presented as successful tool evidence. Dataset previews, raw chart points, and high-cardinality categorical identifiers remain local. The plugin rejects calls after the configured maximum. The request also has a cancellation timeout.
 
 ## Statistical conventions
 
